@@ -24,7 +24,7 @@ RDEPEND="
 	!app-crypt/kbfs
 	!app-crypt/keybase
 	gui? ( x11-libs/gtk+:3 )
-        sys-fs/fuse
+        sys-fs/fuse:0
 "
 
 QA_PREBUILT="
