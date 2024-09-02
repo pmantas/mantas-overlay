@@ -9,9 +9,11 @@ DESCRIPTION="Client for keybase.io (binary version with GUI)"
 HOMEPAGE="https://keybase.io/"
 
 MY_PN="${PN/-bin/}"
-COMMIT_ID=ae7e4a1c15
+COMMIT_ID=3212f60cc5
 MY_PV="$(ver_cut 1-3)-$(ver_cut 4 ${PV/p//}).${COMMIT_ID}"
 SRC_URI="https://prerelease.keybase.io/linux_binaries/deb/${MY_PN}_${MY_PV}_amd64.deb"
+
+S="${WORKDIR}"
 
 LICENSE="BSD"
 SLOT="0"
@@ -24,7 +26,7 @@ RDEPEND="
 	!app-crypt/kbfs
 	!app-crypt/keybase
 	gui? ( x11-libs/gtk+:3 )
-        sys-fs/fuse:0
+	sys-fs/fuse:0
 "
 
 QA_PREBUILT="
@@ -38,8 +40,6 @@ QA_PREBUILT="
 	usr/bin/keybase
 	usr/bin/keybase-redirector
 "
-
-S="${WORKDIR}"
 
 src_prepare() {
 	default
