@@ -1,0 +1,39 @@
+#!/sbin/openrc-run
+name="asus-numpad"
+description="ASUS NumberPad userspace driver"
+
+command="/usr/bin/asus-numpad"
+command_args=""
+command_background=true
+pidfile="/var/run/${RC_SVCNAME}.pid"
+respawn_delay=5
+
+# run as unprivileged user
+command_user="asusnumpad:asusnumpad"
+
+depend() {
+    need localmount
+    use irqbalance
+}
+
+start_pre() {
+    # ensure asusnumpad user exists
+    if ! getent passwd asusnumpad >/dev/null; then
+        eerror "user 'asusnumpad' does not exist; create it: sudo useradd -r -s /sbin/nologin -M asusnumpad"
+        return 1
+    fi
+
+    # ensure /dev/uinput is writable by group 'uinput' (udev rule should set this)
+    if ! [ -e /dev/uinput ]; then
+        eerror "/dev/uinput does not exist; ensure uinput kernel support is available and udev rule installed"
+        return 1
+    fi
+
+    # check group membership
+    if ! id -nG asusnumpad | grep -qw uinput; then
+        eerror "user 'asusnumpad' is not in group 'uinput'. Run: sudo usermod -aG uinput asusnumpad"
+        return 1
+    fi
+
+    return 0
+}

@@ -1,0 +1,2 @@
+KERNEL=="uinput", GROUP="uinput", MODE="0660"
+SUBSYSTEM=="i2c-dev", GROUP="i2c", MODE="0660"
