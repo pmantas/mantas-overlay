@@ -1,4 +1,4 @@
-USE="brightness-control -cdda -dvd -debug dist-kernel dracut -embedded grub -gtk -gtk3 -haptic -introspection -joystick kwin -lua -mng -modemmanager -perl -ppp -speechd -vala -wxwidgets"
+USE="brightness-control -cdda -dvd -debug dist-kernel dracut -embedded grub -gtk -gtk3 -haptic -introspection -joystick kwin -lua -mng -modemmanager -perl -ppp -speechd -vala vpx -wxwidgets"
 
 COMMON_FLAGS="-march=native -O2 -pipe -fomit-frame-pointer -fdiagnostics-color=always"
 CFLAGS="${COMMON_FLAGS}"
