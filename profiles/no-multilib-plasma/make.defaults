@@ -1,6 +1,6 @@
 USE="brightness-control -cdda -dvd -debug dist-kernel dracut -embedded grub -gtk -gtk3 -haptic -introspection -joystick kwin -lua -mng -modemmanager -perl -ppp -speechd -vala -wxwidgets"
 
-COMMON_FLAGS="-march=native -O2 -pipe -fomit-frame-pointer"
+COMMON_FLAGS="-march=native -O2 -pipe -fomit-frame-pointer -fdiagnostics-color=always"
 CFLAGS="${COMMON_FLAGS}"
 CXXFLAGS="${COMMON_FLAGS}"
 FCFLAGS="${COMMON_FLAGS}"
@@ -9,9 +9,10 @@ FFLAGS="${COMMON_FLAGS}"
 LC_MESSAGES=C.UTF-8
 
 RUSTFLAGS="${RUSTFLAGS} -C target-cpu=native"
+PERL_FEATURES="ithreads quadmath"
 
 EMERGE_DEFAULT_OPTS_PROFILE="-v --jobs-tmpdir-require-free-gb=0"
 ACCEPT_KEYWORDS="~amd64"
 ACCEPT_LICENSE="@BINARY-REDISTRIBUTABLE Vivaldi"
 
-L10N="en en-GB en-US lt"
+L10N="-* en en-GB en-US lt"
