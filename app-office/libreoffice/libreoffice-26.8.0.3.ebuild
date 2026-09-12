@@ -12,8 +12,8 @@ MY_PV="${MY_PV/_pre/}"
 # experimental ; release ; old
 # Usually the tarballs are moved a lot so this should make everyone happy.
 DEV_URI="
-	https://dev-builds.libreoffice.org/pre-releases/src
 	https://download.documentfoundation.org/libreoffice/src/${MY_PV:0:6}/
+	https://dev-builds.libreoffice.org/pre-releases/src
 	https://downloadarchive.documentfoundation.org/libreoffice/old/${MY_PV}/src
 "
 ADDONS_URI="https://dev-www.libreoffice.org/src/"
@@ -47,12 +47,24 @@ unset DEV_URI
 ADDONS_SRC=(
 	# not packaged in Gentoo
 	"${ADDONS_URI}/dragonbox-1.1.3.tar.gz"
-	# not packaged in Gentoo, https://www.netlib.org/fp/dtoa.c
-	"${ADDONS_URI}/dtoa-20180411.tgz"
+	# BENTOO-DIVERGENCE: DEPEND - games-engines/box2d is ABSENT here where
+	# ::gentoo depends on it. This is the rare case of bundling being the
+	# correct call, and the next two lines say why. ::gentoo can depend on it
+	# because their newest is 25.2, which still wants the 2.x API.
+	# >=26.8 detects system box2d through pkg-config and wants the 3.x API;
+	# games-engines/box2d is stuck at 2.4.x and ships no box2d.pc at all.
+	"${ADDONS_URI}/box2d-3.1.1.tar.gz"
 	# not packaged in Gentoo, https://github.com/serge-sans-paille/frozen
 	"${ADDONS_URI}/frozen-1.2.0.tar.gz"
 	# not packaged in Gentoo, https://skia.org/
-	"${ADDONS_URI}/skia-m142-f4ed99d2443962782cf5f8b4dd27179f131e7cbe.tar.xz"
+	"${ADDONS_URI}/skia-m147-ad8ecedbfdef9f4ae4b1e73347b6dd56e6637d38.tar.xz"
+	# BENTOO-DIVERGENCE: SRC_URI - libeot, which ::gentoo does not fetch.
+	# Embedded OpenType is default-on for Linux from the 26.2 series onwards
+	# (configure.ac forces enable_eot=yes), so libeot is always needed: the
+	# system copy under USE=eot, the bundled one otherwise. The bundled build
+	# looks the tarball up in DISTDIR through --with-external-tar, so without
+	# this entry USE=-eot dies on UnpackedTarget/libeot-0.01.tar.bz2.
+	"!eot? ( ${ADDONS_URI}/libeot-0.01.tar.bz2 )"
 
 	"base? (
 		${ADDONS_URI}/ba2930200c9f019c2d93a8c88c651a0f-flow-engine-0.9.4.zip
@@ -86,12 +98,15 @@ LICENSE="|| ( LGPL-3 MPL-1.1 )"
 SLOT="0"
 
 [[ ${MY_PV} == *9999* ]] || \
-KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc64 ~riscv ~x86 ~amd64-linux"
+KEYWORDS="~amd64"
 
 # Extensions that need extra work:
 LO_EXTS="nlpsolver scripting-beanshell scripting-javascript wiki-publisher"
 
-IUSE="accessibility base bluetooth +branding coinmp +cups custom-cflags +dbus debug eds
+# BENTOO-DIVERGENCE: IUSE - eot, an overlay-only flag choosing the system
+# media-libs/libeot over the bundled copy. ::gentoo has no equivalent because
+# it always bundles. See the note above DEPEND for why it is off by default.
+IUSE="accessibility base bluetooth +branding coinmp +cups custom-cflags +dbus debug eds eot
 googledrive gstreamer +gtk3 gtk4 kde ldap +mariadb odk pdfimport postgres qt6 test valgrind vulkan
 $(printf 'libreoffice_extensions_%s ' ${LO_EXTS})"
 
@@ -117,7 +132,7 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	>=app-text/libebook-0.1
 	app-text/libepubgen
 	>=app-text/libetonyek-0.1
-	app-text/libexttextcat
+	app-text/libexttextcat:=
 	app-text/liblangtag
 	>=app-text/libmspub-0.1.0
 	>=app-text/libmwaw-0.3.21
@@ -150,15 +165,14 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	>=dev-libs/redland-1.0.16
 	dev-libs/zxcvbn-c
 	>=dev-libs/xmlsec-1.2.35:=[nss]
-	>=games-engines/box2d-2.4.1:0
 	media-gfx/fontforge
 	media-gfx/graphite2
 	media-libs/fontconfig
 	>=media-libs/freetype-2.11.0-r1:2
-	>=media-libs/harfbuzz-5.1.0:=[graphite,icu]
+	>=media-libs/harfbuzz-8.3.1:=[graphite,icu]
 	media-libs/lcms:2
 	>=media-libs/libcdr-0.1.0
-	media-libs/libeot
+	eot? ( media-libs/libeot )
 	>=media-libs/libepoxy-1.3.1
 	>=media-libs/libfreehand-0.1.0
 	media-libs/libjpeg-turbo:=
@@ -172,7 +186,7 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	media-libs/zxing-cpp:=
 	net-misc/curl
 	sci-mathematics/lpsolve:=
-	virtual/zlib
+	virtual/zlib:=
 	virtual/opengl
 	x11-libs/cairo
 	x11-libs/libXinerama
@@ -236,6 +250,27 @@ COMMON_DEPEND="${PYTHON_DEPS}
 #        after everything upstream is under gbuild
 #        as dmake execute tests right away
 #        tests apparently also need google-carlito-fonts (not packaged)
+# BENTOO-DIVERGENCE: DEPEND - abseil-cpp, fast_float and libeot in the dependency
+# string below, none of which ::gentoo depends on. All three are unbundlings this
+# overlay does and it does not: --with-system-abseil where ::gentoo passes
+# --without-system-abseil, and system libeot under USE=eot where it passes
+# nothing and always bundles.
+# BENTOO-DIVERGENCE: RDEPEND - the same three atoms, same reason.
+#
+# The libeot dependency is behind USE=eot, and off by default. This is a
+# system-vs-bundled switch, not a feature switch: LibreOffice bundles libeot,
+# so --without-system-libeot builds the bundled copy and Embedded OpenType
+# keeps working either way -- true only because ADDONS_SRC carries a matching
+# "!eot? ( ... libeot-0.01.tar.bz2 )" entry. The bundled build reads that
+# tarball out of DISTDIR, so dropping the entry makes USE=-eot die on
+# UnpackedTarget/libeot-0.01.tar.bz2. It is gated because media-libs/libeot is
+# keyworded only amd64/x86/riscv, and a hard dependency on it made this package
+# unresolvable on the arm, arm64, loong and ppc64 keywords it carries -- an
+# overlay that exists to cover third-party hardware should not lose four
+# arches to an optional unbundling.
+#
+# These lines live OUTSIDE the string for the reason spelled out in webkit-gtk:
+# a "#" inside DEPEND="..." is parsed as an atom, not as a comment.
 DEPEND="${COMMON_DEPEND}
 	>=dev-libs/libatomic_ops-7.2d
 	dev-perl/Archive-Zip
@@ -280,7 +315,7 @@ BDEPEND="
 	virtual/pkgconfig
 	odk? ( >=app-text/doxygen-1.8.4 )
 "
-if [[ ${MY_PV} != *9999* ]] && [[ ${PV} != *_* ]]; then
+if [[ ${MY_PV} != *9999* ]]; then
 	PDEPEND="=app-office/libreoffice-l10n-$(ver_cut 1-2)*"
 else
 	# Translations are not reliable on live ebuilds
@@ -288,19 +323,25 @@ else
 	RDEPEND+=" !app-office/libreoffice-l10n"
 fi
 
+# BENTOO-DIVERGENCE: PATCHES - ::gentoo's three, plus one upstream backport
+# they do not carry (svlockbytes, Gerrit 197842 / commit e3ea377f2daa). The
+# three shared entries are byte-identical; only the fourth diverges, and it
+# is a cherry-pick rather than a fork -- drop it at the release that
+# includes the commit.
 PATCHES=(
 	# "${WORKDIR}"/${PATCHSET/.tar.xz/}
 
 	# not upstreamable stuff
 	"${FILESDIR}/${PN}-6.1-nomancompress.patch"
-	"${FILESDIR}/${PN}-24.2-qtdetect.patch"
 	"${FILESDIR}/${PN}-25.2-cflags.patch"
 
-	# upstream backport: anchor SvLockBytes vtable in tools library so that
-	# svidl (idl/source/prj/{database,parser}.cxx) links cleanly
-	# https://gerrit.libreoffice.org/c/core/+/197842
-	# commit e3ea377f2daa2756a412dd974eb39fd9f5db1366
-	"${FILESDIR}/${PN}-26.2-svlockbytes.patch"
+	# ${PN}-24.2-qtdetect.patch dropped: upstream reworked moc detection, the
+	# MOC6 search path now starts with ${QT6DIR}/libexec:${QT6DIR}/bin and the
+	# result is validated against "moc -v". The MOC5 hunk is dead code here
+	# because we always configure with --disable-qt5.
+	#
+	# ${PN}-26.2-svlockbytes.patch dropped: merged upstream, commit
+	# e3ea377f2daa2756a412dd974eb39fd9f5db1366
 )
 
 _check_reqs() {
@@ -521,7 +562,6 @@ src_configure() {
 		--disable-epm
 		--disable-fetch-external
 		--disable-firebird-sdbc
-		--disable-gtk3
 		--disable-gtk3-kde5
 		# Covered by our own toolchain defaults
 		--disable-hardening-flags
@@ -541,6 +581,11 @@ src_configure() {
 		--with-lang=""
 		--with-parallelism=$(makeopts_jobs)
 		--with-system-abseil
+		# Say which copy to use instead of letting libo_CHECK_SYSTEM_MODULE
+		# decide: left alone it takes the system libeot when installed and
+		# the bundled one when not, which is an automagic dependency. The
+		# flag makes the choice explicit in both directions.
+		$(use_with eot system-libeot)
 		--with-system-openjpeg
 		--with-tls=nss
 		--with-vendor="Gentoo Foundation"
@@ -550,6 +595,7 @@ src_configure() {
 		--without-helppack-integration
 		--with-system-gpgmepp
 		--with-system-zxcvbn
+		--without-system-box2d
 		--without-system-dragonbox
 		--without-system-frozen
 		--without-system-java-websocket
@@ -582,7 +628,10 @@ src_configure() {
 		$(use_with java)
 		$(use_with odk doxygen)
 		$(use_with valgrind)
-		--enable-skia-vulkan-validation
+		# SK_ENABLE_VK_LAYERS=1. Debug instrumentation, so it is gated on
+		# USE=debug rather than passed unconditionally inside
+		# --enable-release-build, which is where it used to sit.
+		$(use_enable debug skia-vulkan-validation)
 	)
 
 	if use eds || use gtk3 || use gtk4 ; then
