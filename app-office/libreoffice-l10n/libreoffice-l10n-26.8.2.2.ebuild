@@ -3,6 +3,12 @@
 
 EAPI=8
 
+# Measured 2026-09-06: every langpack/helppack RPM the TDF mirror serves is
+# "PayloadIsXz". Without this, rpm.eclass takes its unset branch and narrows
+# BDEPEND to app-arch/rpm2targz alone, forcing that package on anyone who
+# already has app-arch/rpm. It is @PRE_INHERIT, so it must precede the inherit.
+RPM_COMPRESS_TYPE=xz
+
 inherit rpm
 
 BASE_PV=$(ver_cut 1-3)
@@ -14,6 +20,10 @@ MY_PV="${MY_PV/_pre/}"
 # only; stable/${BASE_PV} does not exist for them at all.
 [[ ${PV} == *_alpha* || ${PV} == *_beta* || ${PV} == *_pre* ]] && TESTING_ONLY=1
 
+# BENTOO-DIVERGENCE: KEYWORDS - ~amd64 alone, where ::gentoo keywords six more
+# arches. ::gentoo builds the langpacks from source; this ebuild unpacks the
+# RPMs the Document Foundation publishes, and the only ones they publish are
+# Linux_x86-64 (see SRC_URI). No other arch has a payload to install.
 DESCRIPTION="Translations for the Libreoffice suite"
 HOMEPAGE="https://www.libreoffice.org"
 BASE_SRC_URI_TESTING="https://download.documentfoundation.org/${PN/-l10n/}/testing/${BASE_PV}/rpm"

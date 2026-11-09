@@ -24,6 +24,10 @@ BRANDING="${PN}-branding-gentoo-0.8.tar.xz"
 [[ ${MY_PV} == *9999* ]] && inherit git-r3
 inherit autotools bash-completion-r1 check-reqs flag-o-matic java-pkg-opt-2 multiprocessing python-single-r1 qmake-utils toolchain-funcs xdg-utils
 
+# BENTOO-DIVERGENCE: KEYWORDS - no ~arm64, where ::gentoo's 25.2 line has arm64
+# stable. Measured 2026-09-07 the same way: media-libs/libeot, a hard DEPEND, is
+# keyworded 'amd64 ~riscv x86' in ::gentoo and has no arm64 at all. That is a
+# dependency this overlay does not own, so the ceiling is theirs to raise.
 DESCRIPTION="A full office productivity suite"
 HOMEPAGE="https://www.libreoffice.org"
 SRC_URI="branding? ( https://dev.gentoo.org/~dilfridge/distfiles/${BRANDING} )"
@@ -110,6 +114,9 @@ IUSE="accessibility base bluetooth +branding coinmp +cups custom-cflags +dbus de
 googledrive gstreamer +gtk3 gtk4 kde ldap +mariadb odk pdfimport postgres qt6 test valgrind vulkan
 $(printf 'libreoffice_extensions_%s ' ${LO_EXTS})"
 
+# BENTOO-DIVERGENCE: REQUIRED_USE - no python_single_target_python3_12 in the ^^
+# group. It follows from PYTHON_COMPAT dropping 3.12, which the IUSE tag above
+# records; the overlay is AHEAD of ::gentoo here, not behind it.
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	base? ( java )
 	bluetooth? ( dbus )
